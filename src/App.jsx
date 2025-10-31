@@ -8,7 +8,7 @@ import {
   CheckCircle,
   UserPlus,
 } from "lucide-react";
-// Mock data de productos
+
 const mockProducts = [
   {
     id: 1,
@@ -111,6 +111,7 @@ const App = () => {
   const [stockError, setStockError] = useState(null);
   const [selectedClient, setSelectedClient] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [discount, setDiscount] = useState(0);
   const categories = ["Todas", "Rellenas", "Secas"];
 
   const addToCart = (product) => {
@@ -164,8 +165,16 @@ const App = () => {
     setCart(cart.filter((item) => item.id !== id));
   };
 
-  const getTotal = () => {
+  const getSubtotal = () => {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  };
+
+  const getDiscountAmount = () => {
+    return (getSubtotal() * discount) / 100;
+  };
+
+  const getTotalWithDiscount = () => {
+    return getSubtotal() - getDiscountAmount();
   };
 
   const placeOrder = () => {
@@ -174,14 +183,17 @@ const App = () => {
       setCart([]);
       setOrderPlaced(false);
       setActiveTab("products");
+      setDiscount(0);
     }, 3000);
   };
+
   const cancelOrder = () => {
     setCart([]);
     setSelectedClient("");
     setOrderPlaced(false);
     setActiveTab("products");
     setStockError(null);
+    setDiscount(0);
   };
 
   const filteredProducts = mockProducts.filter((p) => {
@@ -195,7 +207,6 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
-      {/* Error notification */}
       {stockError && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-pulse">
           <div className="bg-red-500 text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3">
@@ -217,7 +228,6 @@ const App = () => {
         </div>
       )}
 
-      {/* Header */}
       <header className="relative bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
@@ -229,6 +239,9 @@ const App = () => {
                 </h1>
                 <p className="text-sm text-gray-600">Frescas y artesanales</p>
               </div>
+            </div>
+            <div className="text-sm text-gray-600 font-medium">
+              📅 30/11/2025
             </div>
           </div>
         </div>
@@ -243,7 +256,6 @@ const App = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Navigation Tabs */}
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => setActiveTab("products")}
@@ -269,6 +281,7 @@ const App = () => {
             )}
           </button>
         </div>
+
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="w-full sm:w-[420px]">
             <label
@@ -292,7 +305,6 @@ const App = () => {
                 ))}
               </select>
 
-              {/* Indicador visual del cliente elegido (opcional) */}
               {selectedClient && (
                 <p className="mt-2 text-xs text-gray-500">
                   Asignado a:{" "}
@@ -312,17 +324,15 @@ const App = () => {
             type="button"
             className="inline-flex items-center gap-2 rounded-xl border border-indigo-300 bg-white px-3 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50 active:scale-[0.99]"
             title="Crear nuevo cliente"
-            // solo visual; no hace nada
             onClick={() => {}}
           >
             <UserPlus className="h-4 w-4" />
             Nuevo cliente
           </button>
         </div>
-        {/* Products View */}
+
         {activeTab === "products" && (
           <div>
-            {/* Category Filter */}
             <div className="flex gap-3 mb-6 flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
                 {categories.map((cat) => (
@@ -338,7 +348,6 @@ const App = () => {
                     {cat}
                   </button>
                 ))}
-                {/* Filtro por nombre */}
               </div>
               <div className="mb-6 relative max-w-xs">
                 <input
@@ -365,7 +374,6 @@ const App = () => {
               </div>
             </div>
 
-            {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredProducts.map((product) => (
                 <div
@@ -419,7 +427,6 @@ const App = () => {
           </div>
         )}
 
-        {/* Cart View */}
         {activeTab === "cart" && (
           <div>
             {orderPlaced ? (
@@ -513,11 +520,49 @@ const App = () => {
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">
                       Resumen del Pedido
                     </h2>
+
+                    <div className="mb-6 pb-6 border-b">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Descuento (%)
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={discount}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            setDiscount(Math.min(100, Math.max(0, value)));
+                          }}
+                          className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-center text-lg font-semibold focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
+                          placeholder="0"
+                        />
+                        <span className="text-2xl font-bold text-gray-600">%</span>
+                      </div>
+                    </div>
+
                     <div className="space-y-3 mb-6">
+                      <div className="flex justify-between text-gray-600">
+                        <span>Subtotal</span>
+                        <span className="font-semibold">
+                          ${getSubtotal().toFixed(0)}
+                        </span>
+                      </div>
+
+                      {discount > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Descuento ({discount}%)</span>
+                          <span className="font-semibold">
+                            -${getDiscountAmount().toFixed(0)}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="border-t pt-3 flex justify-between text-xl font-bold text-gray-800">
                         <span>Total</span>
                         <span className="text-orange-600">
-                          ${getTotal().toFixed(0)}
+                          ${getTotalWithDiscount().toFixed(0)}
                         </span>
                       </div>
                     </div>
